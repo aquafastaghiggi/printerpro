@@ -27,7 +27,26 @@ if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }
 
-const backend = run("python", ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", String(backendPort)]);
+const seed = spawnSync("python", ["scripts/create_admin.py"], {
+  cwd: root,
+  stdio: "inherit",
+  shell: process.platform === "win32",
+  env: {
+    ...process.env,
+    AUTO_CREATE_TABLES: "true",
+  },
+});
+
+if (seed.status !== 0) {
+  process.exit(seed.status ?? 1);
+}
+
+const backend = run("python", ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", String(backendPort)], {
+  env: {
+    ...process.env,
+    AUTO_CREATE_TABLES: "true",
+  },
+});
 const frontend = run("node", ["scripts/serve-web.mjs"], {
   env: {
     ...process.env,
@@ -45,6 +64,7 @@ process.on("SIGTERM", shutdown);
 
 console.log(`Backend: ${backendUrl}`);
 console.log(`Frontend: ${frontendUrl}`);
+console.log("Empresa modelo: Empresa Modelo | login: demo@printerpro.com | senha: 123456");
 console.log("Abra o frontend para visualizar o sistema no localhost.");
 
 backend.on("exit", (code) => {

@@ -33,17 +33,17 @@ import type {
 type AuthView = "login" | "setup" | "portal";
 
 const emptyBootstrap: BootstrapRequest = {
-  tenant_name: "Empresa Demo",
+  tenant_name: "Empresa Modelo",
   tenant_document: "00000000000000",
-  admin_name: "Administrador",
-  admin_email: "admin@demo.com",
-  admin_password: "admin123",
+  admin_name: "Usuario Modelo",
+  admin_email: "demo@printerpro.com",
+  admin_password: "123456",
 };
 
 const emptyLogin = {
-  tenant_key: "00000000000000",
-  email: "admin@demo.com",
-  password: "admin123",
+  tenant_key: "Empresa Modelo",
+  email: "demo@printerpro.com",
+  password: "123456",
 };
 
 const emptyPortalLogin = {
@@ -170,7 +170,7 @@ const emptyBilling = {
 };
 
 const emptyFiscalConfig = {
-  company_name: "Empresa Demo",
+  company_name: "Empresa Modelo",
   cnpj: "00000000000191",
   inscricao_estadual: "",
   inscricao_municipal: "",

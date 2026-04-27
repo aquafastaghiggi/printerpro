@@ -27,11 +27,11 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: "60"
       AUTO_CREATE_TABLES: "false"
       AUTO_CREATE_ADMIN: "true"
-      ADMIN_TENANT_NAME: Empresa Demo
+      ADMIN_TENANT_NAME: Empresa Modelo
       ADMIN_TENANT_DOCUMENT: "00000000000000"
-      ADMIN_NAME: Administrador
-      ADMIN_EMAIL: admin@demo.com
-      ADMIN_PASSWORD: admin123
+      ADMIN_NAME: Usuario Modelo
+      ADMIN_EMAIL: demo@printerpro.com
+      ADMIN_PASSWORD: "123456"
     depends_on:
       db:
         condition: service_healthy
