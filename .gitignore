@@ -1,0 +1,15 @@
+.env
+.venv
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pyc
+*.sqlite3
+*.db
+dist/
+build/
+*.egg-info/
+node_modules/
+dist/
+vite.svg
