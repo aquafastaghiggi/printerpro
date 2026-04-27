@@ -4,6 +4,7 @@ import { extname, resolve } from "node:path";
 
 const root = resolve(process.cwd(), "dist");
 const port = Number(process.env.PORT ?? 4173);
+const host = process.env.HOST ?? "127.0.0.1";
 
 if (!existsSync(root)) {
   console.error("Diretorio dist nao encontrado. Execute `npm run build` primeiro.");
@@ -44,6 +45,7 @@ const server = createServer((req, res) => {
   createReadStream(filePath).pipe(res);
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`Frontend disponível em http://127.0.0.1:${port}`);
+server.listen(port, host, () => {
+  const displayHost = host === "0.0.0.0" ? "localhost" : host;
+  console.log(`Frontend available at http://${displayHost}:${port}`);
 });

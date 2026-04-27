@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: printerpro-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: printerpro
+      POSTGRES_USER: printer
+      POSTGRES_PASSWORD: printer
+    volumes:
+      - printerpro-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U printer -d printerpro"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: printerpro-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://printer:printer@db:5432/printerpro
+      SECRET_KEY: printerpro-secret-key
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      AUTO_CREATE_TABLES: "false"
+      AUTO_CREATE_ADMIN: "true"
+      ADMIN_TENANT_NAME: Empresa Demo
+      ADMIN_TENANT_DOCUMENT: "00000000000000"
+      ADMIN_NAME: Administrador
+      ADMIN_EMAIL: admin@demo.com
+      ADMIN_PASSWORD: admin123
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "18000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        VITE_API_URL: http://localhost:18000/api/v1
+    container_name: printerpro-frontend
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: "4173"
+    depends_on:
+      - backend
+    ports:
+      - "4183:4173"
+
+volumes:
+  printerpro-db:

@@ -7,7 +7,9 @@
     "dev": "node scripts/dev-local.mjs",
     "dev:web": "node scripts/serve-web.mjs",
     "build": "node scripts/build-web.mjs",
-    "preview": "node scripts/serve-web.mjs"
+    "preview": "node scripts/serve-web.mjs",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "react": "^18.3.1",

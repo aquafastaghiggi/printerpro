@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+BASE_DIR = Path(__file__).resolve().parents[1]
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+from app.core.config import settings
 from app.core.database import SessionLocal, init_db
 from app.core.enums import UserRole
 from app.core.security import hash_password
@@ -12,7 +19,8 @@ from app.models.user import User
 
 
 def main() -> None:
-    init_db()
+    if settings.auto_create_tables:
+        init_db()
     tenant_name = os.getenv("ADMIN_TENANT_NAME", "Empresa Demo")
     tenant_document = os.getenv("ADMIN_TENANT_DOCUMENT", "00000000000000")
     admin_name = os.getenv("ADMIN_NAME", "Administrador")
