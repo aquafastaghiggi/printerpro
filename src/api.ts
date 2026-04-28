@@ -21,6 +21,15 @@ import type {
   FiscalDocumentIssueRequest,
   FiscalDocumentUpdateRequest,
   FiscalSummary,
+  DashboardOverview,
+  MaintenanceSyncResponse,
+  MaintenanceDispatchResponse,
+  MaintenanceTask,
+  MaintenanceTaskCreate,
+  MaintenanceTaskUpdate,
+  NotificationDispatchResponse,
+  NotificationSyncResponse,
+  OperationalNotification,
   PortalLoginRequest,
   PortalReadingCreate,
   PortalReport,
@@ -270,6 +279,42 @@ export const api = {
   },
   fiscalSummary(token: string) {
     return request<FiscalSummary>("/fiscal/dashboard", {}, token);
+  },
+  dashboardOverview(token: string) {
+    return request<DashboardOverview>("/dashboard/executivo", {}, token);
+  },
+  listMaintenanceTasks(token: string) {
+    return request<MaintenanceTask[]>("/manutencao/fila", {}, token);
+  },
+  createMaintenanceTask(token: string, payload: MaintenanceTaskCreate) {
+    return request<MaintenanceTask>("/manutencao/fila", { method: "POST", body: JSON.stringify(payload) }, token);
+  },
+  syncMaintenanceTasks(token: string) {
+    return request<MaintenanceSyncResponse>("/manutencao/fila/sincronizar", { method: "POST" }, token);
+  },
+  updateMaintenanceTask(token: string, id: number, payload: MaintenanceTaskUpdate) {
+    return request<MaintenanceTask>(`/manutencao/fila/${id}`, { method: "PATCH", body: JSON.stringify(payload) }, token);
+  },
+  startMaintenanceTask(token: string, id: number) {
+    return request<MaintenanceTask>(`/manutencao/fila/${id}/iniciar`, { method: "POST" }, token);
+  },
+  completeMaintenanceTask(token: string, id: number) {
+    return request<MaintenanceTask>(`/manutencao/fila/${id}/concluir`, { method: "POST" }, token);
+  },
+  dispatchMaintenanceTask(token: string, id: number) {
+    return request<MaintenanceDispatchResponse>(`/manutencao/fila/${id}/enviar`, { method: "POST" }, token);
+  },
+  listNotifications(token: string) {
+    return request<OperationalNotification[]>("/notificacoes", {}, token);
+  },
+  syncNotifications(token: string) {
+    return request<NotificationSyncResponse>("/notificacoes/sincronizar", { method: "POST" }, token);
+  },
+  markNotificationRead(token: string, id: number) {
+    return request<OperationalNotification>(`/notificacoes/${id}/lida`, { method: "POST" }, token);
+  },
+  dispatchNotifications(token: string) {
+    return request<NotificationDispatchResponse>("/notificacoes/disparar", { method: "POST" }, token);
   },
   listFiscalDocuments(token: string) {
     return request<FiscalDocument[]>("/fiscal/documentos", {}, token);

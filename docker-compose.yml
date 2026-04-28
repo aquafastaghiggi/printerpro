@@ -26,6 +26,7 @@ services:
       SECRET_KEY: printerpro-secret-key
       ACCESS_TOKEN_EXPIRE_MINUTES: "60"
       AUTO_CREATE_TABLES: "false"
+      CORS_ORIGINS: '["http://localhost:4183","http://127.0.0.1:4183","http://localhost:4173","http://127.0.0.1:4173"]'
       AUTO_CREATE_ADMIN: "true"
       ADMIN_TENANT_NAME: Empresa Modelo
       ADMIN_TENANT_DOCUMENT: "00000000000000"

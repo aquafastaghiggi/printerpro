@@ -1,5 +1,6 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { api, clearPortalToken, clearToken, getStoredPortalToken, getStoredToken, storePortalToken, storeToken } from "./api";
+import ExecutiveDashboard from "./ExecutiveDashboard";
 import PortalWorkspace from "./PortalWorkspace";
 import type {
   AgingReport,
@@ -25,12 +26,200 @@ import type {
   Tenant,
   UserMe,
   Boleto,
+  DashboardOverview,
+  MaintenanceTask,
+  OperationalNotification,
   RegimeTributario,
   StatusDocumentoFiscal,
   TipoDocumentoFiscal,
 } from "./types";
 
 type AuthView = "login" | "setup" | "portal";
+type WorkspaceSection = "overview" | "cadastros" | "financeiro" | "fiscal";
+
+const workspaceSections: Array<{
+  id: WorkspaceSection;
+  label: string;
+  title: string;
+  description: string;
+}> = [
+  {
+    id: "overview",
+    label: "Visão geral",
+    title: "Cockpit executivo",
+    description: "Resumo operacional, BI, alertas e fila técnica em um único espaço.",
+  },
+  {
+    id: "cadastros",
+    label: "Cadastros",
+    title: "Base cadastral",
+    description: "Clientes, equipamentos, planos, contratos e tenants para sustentar a operação.",
+  },
+  {
+    id: "financeiro",
+    label: "Financeiro",
+    title: "Centro financeiro",
+    description: "Recebíveis, pagáveis, boletos, remessas, conciliação e aging.",
+  },
+  {
+    id: "fiscal",
+    label: "Fiscal",
+    title: "Operação fiscal",
+    description: "Configuração tributária, emissão e histórico de documentos fiscais.",
+  },
+];
+
+type WorkspaceSubmenu = {
+  id: string;
+  label: string;
+  description: string;
+  anchorId: string;
+  adminOnly?: boolean;
+};
+
+type WorkspaceMenuGroup = {
+  id: WorkspaceSection;
+  label: string;
+  title: string;
+  description: string;
+  children?: WorkspaceSubmenu[];
+};
+
+const workspaceMenuGroups: WorkspaceMenuGroup[] = [
+  {
+    id: "overview",
+    label: "Visão geral",
+    title: "Cockpit executivo",
+    description: "Resumo operacional, BI, alertas e fila técnica em um único espaço.",
+  },
+  {
+    id: "cadastros",
+    label: "Cadastros",
+    title: "Base cadastral",
+    description: "Clientes, equipamentos, planos, contratos e tenants para sustentar a operação.",
+    children: [
+      {
+        id: "cadastros-tenants",
+        label: "Tenants",
+        description: "Acesso administrativo e base principal.",
+        anchorId: "cadastros-tenants",
+        adminOnly: true,
+      },
+      {
+        id: "cadastros-clientes",
+        label: "Clientes",
+        description: "Cadastro base para contratos e faturamento.",
+        anchorId: "cadastros-clientes",
+      },
+      {
+        id: "cadastros-planos",
+        label: "Planos",
+        description: "Definição dos modelos de cobrança.",
+        anchorId: "cadastros-planos",
+      },
+      {
+        id: "cadastros-equipamentos",
+        label: "Equipamentos",
+        description: "Controle do parque instalado.",
+        anchorId: "cadastros-equipamentos",
+      },
+      {
+        id: "cadastros-contratos",
+        label: "Contratos",
+        description: "Vínculo comercial com clientes e planos.",
+        anchorId: "cadastros-contratos",
+      },
+      {
+        id: "cadastros-leituras",
+        label: "Leituras",
+        description: "Base para faturamento por consumo.",
+        anchorId: "cadastros-leituras",
+      },
+    ],
+  },
+  {
+    id: "financeiro",
+    label: "Financeiro",
+    title: "Centro financeiro",
+    description: "Recebíveis, pagáveis, boletos, remessas, conciliação e aging.",
+    children: [
+      {
+        id: "financeiro-faturamento",
+        label: "Faturamento",
+        description: "Geração por competência.",
+        anchorId: "financeiro-faturamento",
+      },
+      {
+        id: "financeiro-receber",
+        label: "Contas a receber",
+        description: "Títulos emitidos e pendências.",
+        anchorId: "financeiro-receber",
+      },
+      {
+        id: "financeiro-pagar",
+        label: "Contas a pagar",
+        description: "Despesas e obrigações operacionais.",
+        anchorId: "financeiro-pagar",
+      },
+      {
+        id: "financeiro-boletos",
+        label: "Boletos",
+        description: "Emissão e operação de cobrança.",
+        anchorId: "financeiro-boletos",
+      },
+      {
+        id: "financeiro-remessas",
+        label: "Remessas",
+        description: "Lotes CNAB e envio bancário.",
+        anchorId: "financeiro-remessas",
+      },
+      {
+        id: "financeiro-conciliacao",
+        label: "Conciliação",
+        description: "Importação de extrato e baixa automática.",
+        anchorId: "financeiro-conciliacao",
+      },
+      {
+        id: "financeiro-aging",
+        label: "Aging",
+        description: "Mapa de inadimplência por faixa.",
+        anchorId: "financeiro-aging",
+      },
+    ],
+  },
+  {
+    id: "fiscal",
+    label: "Fiscal",
+    title: "Operação fiscal",
+    description: "Configuração tributária, emissão e histórico de documentos fiscais.",
+    children: [
+      {
+        id: "fiscal-configuracao",
+        label: "Configuração",
+        description: "Dados tributários e parâmetros do tenant.",
+        anchorId: "fiscal-configuracao",
+      },
+      {
+        id: "fiscal-emissao",
+        label: "Emissão fiscal",
+        description: "Emissão individual de documentos.",
+        anchorId: "fiscal-emissao",
+      },
+      {
+        id: "fiscal-lote",
+        label: "Lote fiscal",
+        description: "Emissão em massa a partir do financeiro.",
+        anchorId: "fiscal-lote",
+      },
+      {
+        id: "fiscal-documentos",
+        label: "Documentos",
+        description: "Histórico de emissão e status fiscal.",
+        anchorId: "fiscal-documentos",
+      },
+    ],
+  },
+];
 
 const emptyBootstrap: BootstrapRequest = {
   tenant_name: "Empresa Modelo",
@@ -239,6 +428,9 @@ function App() {
   const [fiscalSummary, setFiscalSummary] = useState<FiscalSummary | null>(null);
   const [fiscalConfig, setFiscalConfig] = useState<FiscalConfig | null>(null);
   const [fiscalDocuments, setFiscalDocuments] = useState<FiscalDocument[]>([]);
+  const [dashboardOverview, setDashboardOverview] = useState<DashboardOverview | null>(null);
+  const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>([]);
+  const [notifications, setNotifications] = useState<OperationalNotification[]>([]);
 
   const [clientForm, setClientForm] = useState(emptyClient);
   const [planForm, setPlanForm] = useState(emptyPlan);
@@ -267,8 +459,18 @@ function App() {
   const [editingReadingId, setEditingReadingId] = useState<number | null>(null);
   const [editingReceivableId, setEditingReceivableId] = useState<number | null>(null);
   const [editingPayableId, setEditingPayableId] = useState<number | null>(null);
+  const [workspaceSection, setWorkspaceSection] = useState<WorkspaceSection>("overview");
+  const [workspaceAnchorId, setWorkspaceAnchorId] = useState<string>("overview");
+  const [expandedMenus, setExpandedMenus] = useState<Record<WorkspaceSection, boolean>>({
+    overview: true,
+    cadastros: true,
+    financeiro: false,
+    fiscal: false,
+  });
 
   const isAdmin = me?.role === "administrador";
+  const activeWorkspaceSection = workspaceMenuGroups.find((section) => section.id === workspaceSection) ?? workspaceMenuGroups[0];
+  const activeWorkspaceSubmenu = activeWorkspaceSection.children?.find((item) => item.anchorId === workspaceAnchorId) ?? null;
 
   const dashboardCards = useMemo(
     () => [
@@ -287,6 +489,20 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  useEffect(() => {
+    if (workspaceSection !== "overview") {
+      setExpandedMenus((current) => (current[workspaceSection] ? current : { ...current, [workspaceSection]: true }));
+    }
+  }, [workspaceSection]);
+
+  useEffect(() => {
+    const target = document.getElementById(workspaceAnchorId);
+    if (!target) return;
+    window.requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [workspaceAnchorId, workspaceSection]);
+
   async function loadSession(currentToken: string) {
     const currentUser = await api.me(currentToken);
     setMe(currentUser);
@@ -295,24 +511,41 @@ function App() {
 
   async function refreshData(currentToken = token, includeTenants = isAdmin) {
     if (!currentToken) return;
-    const [clientsData, equipmentData, plansData, contractsData, readingsData] = await Promise.all([
+    const [clientsData, equipmentData, plansData, contractsData, readingsData, dashboardData] = await Promise.all([
       api.listClients(currentToken),
       api.listEquipment(currentToken),
       api.listPlans(currentToken),
       api.listContracts(currentToken),
       api.listReadings(currentToken),
+      api.dashboardOverview(currentToken),
     ]);
     setClients(clientsData);
     setEquipment(equipmentData);
     setPlans(plansData);
     setContracts(contractsData);
     setReadings(readingsData);
+    setDashboardOverview(dashboardData);
+    await Promise.all([refreshNotifications(currentToken), refreshMaintenance(currentToken)]);
     if (includeTenants) {
       const tenantsData = await api.listTenants(currentToken);
       setTenants(tenantsData);
     }
     await refreshFinance(currentToken);
     await refreshFiscal(currentToken);
+  }
+
+  async function refreshNotifications(currentToken = token) {
+    if (!currentToken) return;
+    await api.syncNotifications(currentToken);
+    const notificationsData = await api.listNotifications(currentToken);
+    setNotifications(notificationsData);
+  }
+
+  async function refreshMaintenance(currentToken = token) {
+    if (!currentToken) return;
+    await api.syncMaintenanceTasks(currentToken);
+    const tasksData = await api.listMaintenanceTasks(currentToken);
+    setMaintenanceTasks(tasksData);
   }
 
   async function refreshFinance(currentToken = token) {
@@ -380,6 +613,9 @@ function App() {
     setFiscalSummary(null);
     setFiscalConfig(null);
     setFiscalDocuments([]);
+    setDashboardOverview(null);
+    setMaintenanceTasks([]);
+    setNotifications([]);
     setEditingTenantId(null);
     setEditingClientId(null);
     setEditingPlanId(null);
@@ -389,6 +625,14 @@ function App() {
     setEditingReceivableId(null);
     setEditingPayableId(null);
     setEditingFiscalDocumentId(null);
+    setWorkspaceSection("overview");
+    setWorkspaceAnchorId("overview");
+    setExpandedMenus({
+      overview: true,
+      cadastros: true,
+      financeiro: false,
+      fiscal: false,
+    });
     setFiscalConfigForm(emptyFiscalConfig);
     setFiscalDocumentForm(emptyFiscalDocument);
     setFiscalBatchReceivables([]);
@@ -396,11 +640,102 @@ function App() {
     setMessage("Sessao encerrada.");
   }
 
+  async function markNotificationRead(id: number) {
+    if (!token) return;
+    setBusy(true);
+    try {
+      await api.markNotificationRead(token, id);
+      await refreshNotifications(token);
+      setMessage("Notificação marcada como lida.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao atualizar notificação");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function dispatchNotifications() {
+    if (!token) return;
+    setBusy(true);
+    try {
+      const response = await api.dispatchNotifications(token);
+      await refreshNotifications(token);
+      setMessage(
+        `Alertas processados: e-mail ${response.email_sent ? "enviado" : "nao configurado"}; WhatsApp ${response.whatsapp_sent ? "enviado" : "nao configurado"}.`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao disparar alertas");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startMaintenanceTask(id: number) {
+    if (!token) return;
+    setBusy(true);
+    try {
+      await api.startMaintenanceTask(token, id);
+      await refreshMaintenance(token);
+      setMessage("Tarefa de manutencao iniciada.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao iniciar manutencao");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function completeMaintenanceTask(id: number) {
+    if (!token) return;
+    setBusy(true);
+    try {
+      await api.completeMaintenanceTask(token, id);
+      await refreshMaintenance(token);
+      setMessage("Tarefa de manutencao concluida.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao concluir manutencao");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function dispatchMaintenanceTask(id: number) {
+    if (!token) return;
+    setBusy(true);
+    try {
+      const response = await api.dispatchMaintenanceTask(token, id);
+      setMessage(
+        `Aviso de manutencao processado: e-mail ${response.email_sent ? "enviado" : "nao configurado"}; WhatsApp ${response.whatsapp_sent ? "enviado" : "nao configurado"}.`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao enviar aviso da manutencao");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function logoutPortal() {
     clearPortalToken();
     setPortalToken(null);
     setPortalLogin(emptyPortalLogin);
     setMessage("Sessao do portal encerrada.");
+  }
+
+  function navigateWorkspaceGroup(section: WorkspaceSection) {
+    setWorkspaceSection(section);
+    setWorkspaceAnchorId(section);
+    setExpandedMenus((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  }
+
+  function navigateWorkspaceSubmenu(section: WorkspaceSection, anchorId: string) {
+    setWorkspaceSection(section);
+    setWorkspaceAnchorId(anchorId);
+    setExpandedMenus((current) => ({
+      ...current,
+      [section]: true,
+    }));
   }
 
   async function handleBootstrap(event: FormEvent) {
@@ -1366,12 +1701,17 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div>
-          <div className="brand-mark">PM</div>
-          <h1>PrintManager Pro</h1>
-          <p>Operação, cobrança e leitura em um único painel.</p>
+    <div className="app-shell admin-shell">
+      <aside className="sidebar main-sidebar">
+        <div className="sidebar-top">
+          <div className="sidebar-brand">
+            <div className="brand-mark">PM</div>
+            <div>
+              <h1>PrintManager Pro</h1>
+              <p>Opere como um ERP leve com foco em BI.</p>
+            </div>
+          </div>
+          <div className="sidebar-badge">AdminLTE style</div>
         </div>
 
         <div className="sidebar-block">
@@ -1386,33 +1726,108 @@ function App() {
           <small>{me.role}</small>
         </div>
 
+        <nav className="sidebar-nav" aria-label="Navegação principal">
+          {workspaceMenuGroups.map((group) => {
+            const visibleChildren = group.children?.filter((child) => !child.adminOnly || isAdmin) ?? [];
+            const isGroupActive = workspaceSection === group.id;
+            const isExpanded = expandedMenus[group.id] ?? false;
+
+            return (
+              <div key={group.id} className="sidebar-nav-group-shell">
+                <button
+                  type="button"
+                  className={`sidebar-nav-group ${isGroupActive ? "sidebar-nav-group--active" : ""}`}
+                  aria-expanded={isExpanded}
+                  onClick={() => navigateWorkspaceGroup(group.id)}
+                >
+                  <span>{group.label}</span>
+                  <small>{group.description}</small>
+                  {visibleChildren.length ? <strong>{isExpanded ? "−" : "+"}</strong> : null}
+                </button>
+
+                {visibleChildren.length && isExpanded ? (
+                  <div className="sidebar-subnav" role="group" aria-label={group.label}>
+                    {visibleChildren.map((child) => {
+                      const isActive = workspaceSection === group.id && workspaceAnchorId === child.anchorId;
+
+                      return (
+                        <button
+                          key={child.id}
+                          type="button"
+                          className={`sidebar-subnav-item ${isActive ? "sidebar-subnav-item--active" : ""}`}
+                          onClick={() => navigateWorkspaceSubmenu(group.id, child.anchorId)}
+                        >
+                          <span>{child.label}</span>
+                          <small>{child.description}</small>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </nav>
+
         <button className="ghost" onClick={logout}>
           Sair
         </button>
       </aside>
 
-      <main className="workspace">
-        <header className="workspace-header">
+      <main className="workspace content-wrapper">
+        <header className="workspace-header content-header">
           <div>
-            <span className="eyebrow">MVP Fase 1</span>
-            <h2>Fluxo operacional pronto para uso.</h2>
-            <p>Cadastre tenant, cliente, equipamento, plano, contrato e leitura. O restante do sistema evolui em cima disso.</p>
+            <span className="eyebrow">{activeWorkspaceSection.label}</span>
+            <h2>{activeWorkspaceSubmenu?.label ?? activeWorkspaceSection.title}</h2>
+            <p>{activeWorkspaceSubmenu?.description ?? activeWorkspaceSection.description}</p>
+            <div className="breadcrumb-line">
+              PrintManager Pro / {activeWorkspaceSection.label}
+              {activeWorkspaceSubmenu ? ` / ${activeWorkspaceSubmenu.label}` : ""}
+            </div>
           </div>
-          <div className="header-message">{busy ? "Processando..." : message || "Tudo pronto para operar."}</div>
+          <div className="content-toolbar">
+            <div className="header-message">{busy ? "Processando..." : message || "Tudo pronto para operar."}</div>
+            <div className="content-toolbar-actions">
+              <button type="button" className="ghost" onClick={() => navigateWorkspaceGroup("overview")}>
+                Visão geral
+              </button>
+              <button type="button" className="secondary" onClick={() => navigateWorkspaceGroup(workspaceSection)}>
+                {expandedMenus[workspaceSection] ? "Recolher menu" : "Expandir menu"}
+              </button>
+            </div>
+          </div>
         </header>
 
-        <section className="metric-grid">
-          {dashboardCards.map((card) => (
-            <article key={card.label} className="metric-card">
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-            </article>
-          ))}
-        </section>
+        <section className="content-body">
+          {workspaceSection === "overview" ? (
+            <section className="overview-section" id="overview">
+            <section className="metric-grid">
+              {dashboardCards.map((card) => (
+                <article key={card.label} className="metric-card">
+                  <span>{card.label}</span>
+                  <strong>{card.value}</strong>
+                </article>
+              ))}
+            </section>
 
-        <section className="content-grid">
+            <ExecutiveDashboard
+              overview={dashboardOverview}
+              maintenanceTasks={maintenanceTasks}
+              notifications={notifications}
+              onSyncNotifications={() => refreshNotifications()}
+              onDispatchNotifications={dispatchNotifications}
+              onSyncMaintenance={() => refreshMaintenance()}
+              onMarkNotificationRead={markNotificationRead}
+              onStartMaintenanceTask={startMaintenanceTask}
+              onCompleteMaintenanceTask={completeMaintenanceTask}
+              onDispatchMaintenanceTask={dispatchMaintenanceTask}
+            />
+            </section>
+          ) : null}
+
+          <section className="content-grid" id="cadastros" hidden={workspaceSection !== "cadastros"}>
           {isAdmin ? (
-            <Panel title="Tenants" description="Acesso administrativo para novos tenants e manutenção de base">
+            <Panel id="cadastros-tenants" title="Tenants" description="Acesso administrativo para novos tenants e manutenção de base">
               <form className="inline-form" onSubmit={createTenant}>
                 <input placeholder="Nome do tenant" value={tenantForm.name} onChange={(e) => setTenantForm({ ...tenantForm, name: e.target.value })} />
                 <input placeholder="Documento" value={tenantForm.document} onChange={(e) => setTenantForm({ ...tenantForm, document: e.target.value })} />
@@ -1449,7 +1864,7 @@ function App() {
             </Panel>
           ) : null}
 
-          <Panel title="Clientes" description="Cadastro base para contratos e faturamento">
+          <Panel id="cadastros-clientes" title="Clientes" description="Cadastro base para contratos e faturamento">
             <form className="panel-form compact" onSubmit={createClient}>
               <Row>
                 <Select
@@ -1530,7 +1945,7 @@ function App() {
             />
           </Panel>
 
-          <Panel title="Planos" description="Definição dos modelos de cobrança">
+          <Panel id="cadastros-planos" title="Planos" description="Definição dos modelos de cobrança">
             <form className="panel-form compact" onSubmit={createPlan}>
               <Row>
                 <Field label="Nome">
@@ -1648,7 +2063,7 @@ function App() {
             />
           </Panel>
 
-          <Panel title="Equipamentos" description="Controle de impressoras e vínculos com cliente">
+          <Panel id="cadastros-equipamentos" title="Equipamentos" description="Controle de impressoras e vínculos com cliente">
             <form className="panel-form compact" onSubmit={createEquipment}>
               <Row>
                 <Select
@@ -1740,7 +2155,7 @@ function App() {
             />
           </Panel>
 
-          <Panel title="Contratos" description="Vincula cliente, plano e equipamentos">
+          <Panel id="cadastros-contratos" title="Contratos" description="Vincula cliente, plano e equipamentos">
             <form className="panel-form compact" onSubmit={createContract}>
               <Row>
                 <Select
@@ -1900,7 +2315,7 @@ function App() {
             />
           </Panel>
 
-          <Panel title="Leituras" description="Lançamento manual inicial do faturamento">
+          <Panel id="cadastros-leituras" title="Leituras" description="Lançamento manual inicial do faturamento">
             <form className="panel-form compact" onSubmit={createReading}>
               <Row>
                 <Select
@@ -2029,7 +2444,7 @@ function App() {
           </Panel>
         </section>
 
-        <section className="finance-section">
+          <section className="finance-section" id="financeiro" hidden={workspaceSection !== "financeiro"}>
           <header className="section-head">
             <div>
               <span className="eyebrow">Fase 2</span>
@@ -2062,7 +2477,7 @@ function App() {
           </section>
 
           <section className="content-grid finance-grid">
-            <Panel title="Gerar faturamento" description="Gera títulos e boletos por competência">
+            <Panel id="financeiro-faturamento" title="Gerar faturamento" description="Gera títulos e boletos por competência">
               <form className="panel-form compact" onSubmit={generateBilling}>
                 <Row>
                   <Field label="Competência">
@@ -2100,7 +2515,7 @@ function App() {
               </form>
             </Panel>
 
-            <Panel title="Contas a receber" description="Títulos emitidos contra contratos">
+            <Panel id="financeiro-receber" title="Contas a receber" description="Títulos emitidos contra contratos">
               <form className="panel-form compact" onSubmit={createReceivable}>
                 <Row>
                   <Select
@@ -2179,7 +2594,7 @@ function App() {
               />
             </Panel>
 
-            <Panel title="Contas a pagar" description="Despesas e obrigações operacionais">
+            <Panel id="financeiro-pagar" title="Contas a pagar" description="Despesas e obrigações operacionais">
               <form className="panel-form compact" onSubmit={createPayable}>
                 <Row>
                   <Select
@@ -2258,7 +2673,7 @@ function App() {
               />
             </Panel>
 
-            <Panel title="Boletos" description="Emissão e operação de cobrança">
+            <Panel id="financeiro-boletos" title="Boletos" description="Emissão e operação de cobrança">
               <form className="panel-form compact" onSubmit={createBoleto}>
                 <Row>
                   <Select
@@ -2325,7 +2740,7 @@ function App() {
               />
             </Panel>
 
-            <Panel title="Remessas" description="Lote CNAB ou envio bancário">
+            <Panel id="financeiro-remessas" title="Remessas" description="Lote CNAB ou envio bancário">
               <form className="panel-form compact" onSubmit={createRemittance}>
                 <Row>
                   <Field label="Banco">
@@ -2382,7 +2797,7 @@ function App() {
               />
             </Panel>
 
-            <Panel title="Conciliação" description="Importação automática de extrato bancário">
+            <Panel id="financeiro-conciliacao" title="Conciliação" description="Importação automática de extrato bancário">
               <form className="panel-form compact" onSubmit={importBankEntries}>
                 <Row>
                   <Field label="Data">
@@ -2431,7 +2846,7 @@ function App() {
               />
             </Panel>
 
-            <Panel title="Aging" description="Mapa de inadimplência por faixa">
+            <Panel id="financeiro-aging" title="Aging" description="Mapa de inadimplência por faixa">
               {agingReport ? (
                 <div className="aging-grid">
                   <div className="aging-block">
@@ -2460,11 +2875,12 @@ function App() {
               ) : (
                 <div className="empty-state">Sem dados de aging ainda.</div>
               )}
-            </Panel>
-          </section>
+          </Panel>
         </section>
 
-        <section className="fiscal-section">
+        </section>
+
+          <section className="fiscal-section" id="fiscal" hidden={workspaceSection !== "fiscal"}>
           <header className="section-head">
             <div>
               <span className="eyebrow">Fase 3</span>
@@ -2497,7 +2913,7 @@ function App() {
           </section>
 
           <section className="content-grid finance-grid">
-            <Panel title="Configuração fiscal" description="Cadastro da base tributária do tenant">
+            <Panel id="fiscal-configuracao" title="Configuração fiscal" description="Cadastro da base tributária do tenant">
               <form className="panel-form compact" onSubmit={saveFiscalConfig}>
                 <Field label="Razão social">
                   <input
@@ -2595,7 +3011,7 @@ function App() {
               </form>
             </Panel>
 
-            <Panel title="Emissão fiscal" description="Emissão de NFe/NFS-e a partir de conta, contrato ou manual">
+            <Panel id="fiscal-emissao" title="Emissão fiscal" description="Emissão de NFe/NFS-e a partir de conta, contrato ou manual">
               <form className="panel-form compact" onSubmit={saveFiscalDocument}>
                 <Row>
                   <Select
@@ -2755,7 +3171,7 @@ function App() {
               </form>
             </Panel>
 
-            <Panel title="Lote fiscal" description="Seleciona contas a receber para emissão em massa">
+            <Panel id="fiscal-lote" title="Lote fiscal" description="Seleciona contas a receber para emissão em massa">
               <form className="panel-form compact" onSubmit={batchIssueFiscalDocuments}>
                 <div className="choice-list">
                   {receivables.map((item) => (
@@ -2785,7 +3201,7 @@ function App() {
               </form>
             </Panel>
 
-            <Panel title="Documentos fiscais" description="Histórico de emissão, autorização e cancelamento">
+            <Panel id="fiscal-documentos" title="Documentos fiscais" description="Histórico de emissão, autorização e cancelamento">
               <DataList
                 items={fiscalDocuments}
                 searchableText={(item) => `${item.recipient_name} ${item.number}/${item.series} ${item.document_type} ${item.status}`}
@@ -2824,15 +3240,28 @@ function App() {
               />
             </Panel>
           </section>
+          </section>
         </section>
       </main>
     </div>
   );
 }
 
-function Panel({ title, description, children }: { title: string; description: string; children: ReactNode }) {
+function Panel({
+  id,
+  title,
+  description,
+  children,
+  className,
+}: {
+  id?: string;
+  title: string;
+  description: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <section className="panel">
+    <section id={id} className={`panel ${className ?? ""}`.trim()}>
       <div className="panel-head">
         <div>
           <h3>{title}</h3>
@@ -2997,3 +3426,5 @@ function Row({ children }: { children: ReactNode }) {
 }
 
 export default App;
+
+

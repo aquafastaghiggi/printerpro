@@ -115,6 +115,177 @@ export type RegimeTributario = "simples_nacional" | "lucro_presumido" | "lucro_r
 export type TipoDocumentoFiscal = "nfe" | "nfse";
 export type StatusDocumentoFiscal = "rascunho" | "autorizado" | "cancelado" | "rejeitado";
 export type OrigemDocumentoFiscal = "manual" | "receivable" | "contract" | "batch";
+export type DashboardAlertSeverity = "critical" | "warning" | "info";
+export type StatusManutencao = "pendente" | "agendada" | "em_execucao" | "concluida" | "cancelada";
+
+export interface DashboardMetrics {
+  clients_total: number;
+  active_contracts: number;
+  active_equipment: number;
+  readings_last_30_days: number;
+  open_tickets: number;
+  contracts_expiring_30_days: number;
+  unvalidated_readings: number;
+  receivables_open_total: number;
+  receivables_overdue_total: number;
+  payables_overdue_total: number;
+}
+
+export interface DashboardAlert {
+  severity: DashboardAlertSeverity;
+  title: string;
+  detail: string;
+  suggested_action: string;
+  count: number;
+}
+
+export interface DashboardRenewal {
+  contract_id: number;
+  number: string;
+  client_name: string;
+  end_date: string;
+  days_left: number;
+  status: string;
+}
+
+export interface DashboardClientInsight {
+  client_id: number;
+  client_name: string;
+  contracts: number;
+  open_total: number;
+  overdue_total: number;
+}
+
+export interface DashboardEquipmentIssue {
+  equipment_id: number;
+  serial_number: string;
+  brand: string;
+  model: string;
+  client_name: string | null;
+  location: string | null;
+  status: StatusEquipamento;
+  issue: string;
+}
+
+export interface DashboardSeriesPoint {
+  label: string;
+  value: number;
+}
+
+export interface DashboardBreakdownPoint {
+  label: string;
+  count: number;
+}
+
+export interface DashboardBI {
+  revenue_by_month: DashboardSeriesPoint[];
+  readings_by_month: DashboardSeriesPoint[];
+  equipment_status: DashboardBreakdownPoint[];
+  maintenance_status: DashboardBreakdownPoint[];
+  maintenance_open_total: number;
+}
+
+export interface DashboardOverview {
+  generated_at: string;
+  metrics: DashboardMetrics;
+  alerts: DashboardAlert[];
+  renewals: DashboardRenewal[];
+  top_clients: DashboardClientInsight[];
+  equipment_issues: DashboardEquipmentIssue[];
+  bi: DashboardBI;
+}
+
+export interface OperationalNotification {
+  id: number;
+  tenant_id: number;
+  source_type: string;
+  source_key: string;
+  severity: DashboardAlertSeverity;
+  title: string;
+  detail: string;
+  suggested_action: string;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationSyncResponse {
+  created: number;
+  updated: number;
+  total: number;
+  generated_at: string;
+}
+
+export interface NotificationDispatchResponse {
+  notifications_count: number;
+  email_sent: boolean;
+  whatsapp_sent: boolean;
+  email_recipient: string | null;
+  whatsapp_recipient: string | null;
+  subject: string;
+  generated_at: string;
+}
+
+export interface MaintenanceTask {
+  id: number;
+  tenant_id: number;
+  equipment_id: number | null;
+  contract_id: number | null;
+  client_id: number | null;
+  source_type: string;
+  source_key: string;
+  title: string;
+  description: string;
+  priority: "baixa" | "media" | "alta";
+  status: StatusManutencao;
+  scheduled_for: string | null;
+  technician_name: string | null;
+  due_date: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MaintenanceTaskCreate {
+  equipment_id?: number | null;
+  contract_id?: number | null;
+  client_id?: number | null;
+  source_type: string;
+  source_key: string;
+  title: string;
+  description: string;
+  priority?: "baixa" | "media" | "alta";
+  scheduled_for?: string | null;
+  technician_name?: string | null;
+  due_date?: string | null;
+  notes?: string | null;
+}
+
+export interface MaintenanceTaskUpdate {
+  status?: StatusManutencao | null;
+  scheduled_for?: string | null;
+  technician_name?: string | null;
+  notes?: string | null;
+}
+
+export interface MaintenanceSyncResponse {
+  created: number;
+  updated: number;
+  total: number;
+  generated_at: string;
+}
+
+export interface MaintenanceDispatchResponse {
+  task_id: number;
+  email_sent: boolean;
+  whatsapp_sent: boolean;
+  email_recipient: string | null;
+  whatsapp_recipient: string | null;
+  subject: string;
+  generated_at: string;
+}
 
 export interface AccountsReceivable {
   id: number;

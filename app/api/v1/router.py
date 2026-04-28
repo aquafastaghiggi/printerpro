@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.routes import auth, billing, clients, contracts, equipment, finance, fiscal, plans, portal, readings, tenants, users
+from app.api.v1.routes import auth, billing, clients, contracts, dashboard, equipment, finance, fiscal, maintenance, notifications, plans, portal, readings, tenants, users
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -15,3 +15,6 @@ api_router.include_router(billing.router, prefix="/faturamento", tags=["faturame
 api_router.include_router(finance.router, prefix="/financeiro", tags=["financeiro"])
 api_router.include_router(fiscal.router, prefix="/fiscal", tags=["fiscal"])
 api_router.include_router(portal.router, prefix="/portal", tags=["portal"])
+api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
+api_router.include_router(maintenance.router, prefix="/manutencao", tags=["manutencao"])
+api_router.include_router(notifications.router, prefix="/notificacoes", tags=["notificacoes"])

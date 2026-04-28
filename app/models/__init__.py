@@ -3,6 +3,8 @@ from app.models.contract import Contract, ContractEquipment
 from app.models.fiscal import FiscalConfig, FiscalDocument
 from app.models.finance import AccountsPayable, AccountsReceivable, BankReconciliationEntry, Boleto, Remittance
 from app.models.portal import PortalTicket
+from app.models.notification import OperationalNotification
+from app.models.maintenance import MaintenanceTask
 from app.models.equipment import Equipment
 from app.models.plan import Plan
 from app.models.reading import Reading

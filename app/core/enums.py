@@ -112,3 +112,11 @@ class PrioridadeChamado(str, Enum):
     BAIXA = "baixa"
     MEDIA = "media"
     ALTA = "alta"
+
+
+class StatusManutencao(str, Enum):
+    PENDENTE = "pendente"
+    AGENDADA = "agendada"
+    EM_EXECUCAO = "em_execucao"
+    CONCLUIDA = "concluida"
+    CANCELADA = "cancelada"

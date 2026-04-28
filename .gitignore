@@ -13,3 +13,4 @@ build/
 node_modules/
 dist/
 vite.svg
+_docx_render_after/

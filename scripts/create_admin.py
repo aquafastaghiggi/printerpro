@@ -4,6 +4,7 @@ import os
 import sys
 from pathlib import Path
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -38,10 +39,20 @@ def main() -> None:
         if not tenant:
             tenant = Tenant(name=tenant_name, document=tenant_document)
             db.add(tenant)
+            try:
+                db.flush()
+            except IntegrityError:
+                db.rollback()
+                tenant = (
+                    db.query(Tenant)
+                    .filter(or_(Tenant.document == tenant_document, Tenant.name == tenant_name))
+                    .first()
+                )
+                if not tenant:
+                    raise
         else:
             tenant.name = tenant_name
             tenant.document = tenant_document
-        db.flush()
 
         user = db.query(User).filter(User.tenant_id == tenant.id, User.email == admin_email).first()
         if not user:
@@ -66,6 +77,7 @@ def main() -> None:
             user.password_hash = hash_password(admin_password)
             user.role = UserRole.ADMIN
 
+        db.flush()
         db.commit()
         print(
             "Empresa modelo pronta. "

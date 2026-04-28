@@ -18,6 +18,20 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     access_token_expire_minutes: int = 60
 
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_use_tls: bool = True
+    smtp_use_ssl: bool = False
+    smtp_from_email: str | None = None
+    smtp_from_name: str = "PrintManager Pro"
+
+    whatsapp_api_url: str | None = None
+    whatsapp_access_token: str | None = None
+    whatsapp_phone_number_id: str | None = None
+    whatsapp_default_to: str | None = None
+
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:3000",
@@ -26,6 +40,8 @@ class Settings(BaseSettings):
             "http://127.0.0.1:5173",
             "http://localhost:4173",
             "http://127.0.0.1:4173",
+            "http://localhost:4183",
+            "http://127.0.0.1:4183",
         ]
     )
     auto_create_tables: bool = True
